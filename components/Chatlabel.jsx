@@ -22,7 +22,7 @@ const Chatlabel = ({openMenu, setOpenMenu}) => {
 
                 <div className='flex items-center gap-3 hover:bg-white/10 px-3 py-2 rounded-lg'>
                     <Image src={assets.delete_icon} className='w-4'alt=''/>
-                    <p>Delete</p>
+                    <p>Delet</p>
                 </div>
 
             </div>
