@@ -28,11 +28,11 @@ export async function POST(req) {
   const { data, type } = evt;
 
   const userData = {
-    _id: data.id,
-    email: data.email_addresses?.[0]?.email_address,
-    name: `${data.first_name || ""} ${data.last_name || ""}`,
-    image: data.image_url,
-  };
+  _id: data.id,
+  email: data.email_addresses?.[0]?.email_address || "unknown@example.com",
+  name: `${data.first_name || ""} ${data.last_name || ""}`.trim() || "Unnamed",
+  image: data.image_url || "",
+};
 
   try {
     await connectDB();
