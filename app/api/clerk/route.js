@@ -5,36 +5,37 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
-  const payload = await req.json();
-  const body = JSON.stringify(payload);
 
-  const headerPayload = headers();
+const wh = new Webhook(process.env.SIGNING_SECRET);
+
+
+  const headerPayload = await headers();
+
   const svixHeaders = {
-    "svix-id": headerPayload.get("svix-id") || "",
-    "svix-timestamp": headerPayload.get("svix-timestamp") || "",
-    "svix-signature": headerPayload.get("svix-signature") || "",
+    "svix-id": headerPayload.get("svix-id"),
+    "svix-timestamp": headerPayload.get("svix-timestamp") ,
+    "svix-signature": headerPayload.get("svix-signature") ,
   };
 
-  const wh = new Webhook(process.env.SIGNING_SECRET || "");
+  //get payload and verify
 
-  let evt;
-  try {
-    evt = wh.verify(body, svixHeaders);
-  } catch (err) {
-    console.error("Webhook signature verification failed:", err);
-    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
-  }
+  const payload = await req.json()
+  const body = JSON.stringify(payload)
+  const {data, type} = wh.verify(body, svixHeaders)
 
-  const { data, type } = evt;
 
+  //prepare user data to be saved in database
   const userData = {
   _id: data.id,
-  email: data.email_addresses?.[0]?.email_address || "unknown@example.com",
-  name: `${data.first_name || ""} ${data.last_name || ""}`.trim() || "Unnamed",
-  image: data.image_url || "",
+  email: data.email_addresses[0].email_address ,
+  name: `${data.first_name || ""} ${data.last_name || ""}`,
+  image: data.image_url ,
 };
 
-  try {
+  
+
+  
+ try {
     await connectDB();
 
     switch (type) {
