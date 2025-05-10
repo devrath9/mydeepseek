@@ -20,6 +20,7 @@ const wh = new Webhook(process.env.SIGNING_SECRET);
   //get payload and verify
 
   const payload = await req.json()
+  console.log("Webhook received:", JSON.stringify(payload, null, 2));
   const body = JSON.stringify(payload)
   const {data, type} = wh.verify(body, svixHeaders)
 
@@ -27,9 +28,9 @@ const wh = new Webhook(process.env.SIGNING_SECRET);
   //prepare user data to be saved in database
   const userData = {
   _id: data.id,
-  email: data.email_addresses[0].email_address ,
+  email: data.email_addresses?.[0]?.email_address || "",
   name: `${data.first_name || ""} ${data.last_name || ""}`,
-  image: data.image_url ,
+  image: data.image_url || "",
 };
 
   
