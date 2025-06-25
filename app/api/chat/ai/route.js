@@ -1,4 +1,4 @@
-export const maxDuration = 60;
+export const maxDuration = 100;
 
 import OpenAI from "openai";
 import connectDB from "@/config/db";
