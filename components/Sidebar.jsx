@@ -4,13 +4,41 @@ import Image from 'next/image'
 import { useClerk, UserButton } from '@clerk/nextjs'
 import { useAppcontext } from '@/context/Appcontext'
 import Chatlabel from './Chatlabel'
+import Modal from './Modal'
 
 const Sidebar = ({ expand, setExpand }) => {
 
   const {openSignIn} = useClerk()
-  const {user} = useAppcontext()
+  const {user, chats, createNewChat} = useAppcontext()
 
-  const[openMenu, setOpenMenu] = useState({id:0, open:false})
+
+  
+
+  const [opentoolbarId, setOpentoolbarId] = useState(null)
+  const [modalType, setModalType] = useState(null)
+  const [activeChat, setActiveChat] = useState(null)
+  
+
+  const openRenameModal = (chat)=>{
+    setActiveChat(chat);
+    setModalType('rename')
+  }
+
+  const openDeleteModal = (chat)=>{
+    setActiveChat(chat);
+    setModalType('delete')
+  }
+
+
+  const closeModal = () => {
+  setModalType(null);
+  setActiveChat(null);
+  };
+
+
+  const toggleToolbar = (chatId)=>{
+    setOpentoolbarId(prev=>(prev===chatId ? null :chatId))
+  }
 
   return (
     <div className={`flex flex-col justify-between transition-all z-50 pt-7 max-md:absolute max-md:h-screen bg-[#212327] 
@@ -43,7 +71,7 @@ const Sidebar = ({ expand, setExpand }) => {
 
         </div>
 
-        <button className={`mt-8 flex items-center justify-center cursor-pointer
+        <button onClick={createNewChat} className={`mt-8 flex items-center justify-center cursor-pointer
             ${expand ? 'bg-primary hover:opacity-90 rounded-2xl gap-2 p-2.5 w-max' :
             'group relative h-9 w-9 mx-auto hover:bg-gray-500/30 rounded-lg'}`}>
 
@@ -63,9 +91,25 @@ const Sidebar = ({ expand, setExpand }) => {
 
 
 
-        <div className={`mt-8 text-white/25 text-sm ${expand ? 'block' : 'hidden'}`}>
+          {/***-------------------Recent Chats------------------------------ */}
+
+        <div className={`mt-8 text-white/25 text-sm ${expand ? 'block' : 'hidden'} `}>
           <p className='my-1'>Recents</p>
-          <Chatlabel openMenu={openMenu} setOpenMenu={setOpenMenu}/>
+
+          <div className='sidebar h-[35vh] lg:h-[50vh]'>
+          {chats.map((chat)=>(
+            <Chatlabel 
+              key={chat._id} 
+              name={chat.name} 
+              id={chat._id} 
+              isToolbarOpen= {opentoolbarId===chat._id}
+              toggleToolbar={()=>toggleToolbar(chat._id)}
+              openRename = {()=>openRenameModal(chat)}
+              openDelete = {()=>openDeleteModal(chat)}
+              />
+            ))}
+            </div>
+          
 
         </div>
 
@@ -83,6 +127,15 @@ const Sidebar = ({ expand, setExpand }) => {
        
         {expand && <span>My Profile</span>}
       </div>
+
+
+
+      {/**---------------------MODAL COMPONENT--------------------- */}
+      <Modal
+      type={modalType}
+      chat={activeChat}
+      onClose={closeModal}
+      />
 
 
 

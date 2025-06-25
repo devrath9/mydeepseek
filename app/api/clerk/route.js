@@ -20,7 +20,7 @@ const wh = new Webhook(process.env.SIGNING_SECRET);
   //get payload and verify
 
   const payload = await req.json()
-  console.log("Webhook received:", JSON.stringify(payload, null, 2));
+  // console.log("Webhook received:", JSON.stringify(payload, null, 2));
   const body = JSON.stringify(payload)
   const {data, type} = wh.verify(body, svixHeaders)
 
