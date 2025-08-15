@@ -7,14 +7,19 @@ import Sidebar from "@/components/Sidebar";
 import PromptBox from "@/components/PromptBox";
 import Message from "@/components/Message";
 import { useAppcontext } from "@/context/Appcontext";
+import SearchModal from "@/components/SearchModal";
+import { useClerk } from "@clerk/nextjs";
 
 export default function Home() {
+
+   const {openSignIn} = useClerk()
   
   const[expand, setExpand] = useState(false)
   const[loading, setLoading] = useState(false)
   const[messages, setMessages] = useState([])
+  const [openSearch, setOpenSearch] = useState(false)
 
-  const {selectedChat} = useAppcontext()
+  const {selectedChat, user} = useAppcontext()
   const containerRef = useRef(null)
 
 
@@ -34,18 +39,28 @@ export default function Home() {
     }
   },[])
 
+  const openSearchModal = ()=>{
+         setOpenSearch(true)
+  }
+
+  const handleClose = ()=>{
+    setOpenSearch(false)
+  }
+
 
 
   
 
   return (
     <div className="flex h-screen" >
-     <Sidebar expand={expand} setExpand={setExpand}/>
+     <Sidebar expand={expand} setExpand={setExpand} openSearchModal={openSearchModal}/>
       <div className="flex-1 flex flex-col justify-center items-center px-4 pb-8  bg-[#292a2d] text-white relative">
         <div className={`md:hidden absolute flex justify-between  items-center w-full top-6 px-4 `}>
           <Image onClick={()=>{expand ? setExpand(false): setExpand(true)}}
           src={assets.menu_icon} alt=''/>
-          <Image className='opacity-70'src={assets.chat_icon} alt=''/>
+          {user ? <Image className='opacity-70'src={assets.chat_icon} alt=''/> 
+          :<button onClick={openSignIn}
+          className="bg-white rounded-xl px-4 py-1.5 font-semibold text-sm cursor-pointer text-black">Login</button>}
         </div>
        
 
@@ -89,6 +104,7 @@ export default function Home() {
         <PromptBox isLoading={loading} setIsLoading={setLoading}/>
 
       </div>
+      <SearchModal open={openSearch} onClose={handleClose}/>
     </div>
   );
 }

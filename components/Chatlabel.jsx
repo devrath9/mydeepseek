@@ -25,8 +25,8 @@ const selectChat = ()=>{
 
 
 return (
-    <div onClick={selectChat} className={`flex items-center justify-between p-2 text-white/80
-                      hover:bg-white/10 rounded-lg text-sm group cursor-pointer `}>
+    <div onClick={selectChat} className={`flex items-center justify-between px-2 py-1.5  text-white/80
+                      hover:bg-white/10 rounded-lg text-[13px] group cursor-pointer `}>
 
       <p className='group-hover:max-w-5/6 truncate  '>{name}</p>
 

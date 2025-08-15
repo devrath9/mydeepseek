@@ -23,7 +23,10 @@ export const AppcontextProvider=({children})=>{
     const createNewChat = async()=>{
         try{
 
-          if(!user) return null;
+          if(!user) {
+            toast.error("Login to create new chats")
+            return null
+        };
 
           const token = await getToken()
 

@@ -37,58 +37,89 @@ const PromptBox = ({isLoading,setIsLoading }) => {
         ...prev,
         messages:[...prev.messages, userPrompt]
        }))  
-       
-       //API CALL
 
-       const {data} = await axios.post('/api/chat/ai', {
-        chatId:selectedChat._id,
-        prompt
-       })
+       //initialising empty assistant message 
+         const assistantMessage = {
+           role:'assistant',
+            content:'',
+            timestamp: Date.now()
+         }
 
-       if(data.success){
-        setChats(prevchats=>prevchats.map((chat)=>chat._id===selectedChat._id
-                                                  ?{...chat, messages:[...chat.messages, data.data]}
-                                                  :chat))
-
-        const message = data.data.content
-        const messageTokens = message.split(' ')         
-        const assistantMessage = {
-          role:'assistant',
-          content: "",
-          timestamp:Date.now()
-        }   
-        
-        setSelectedChat(prev=>({
+       // adding assistant message to selectedChat
+         setSelectedChat(prev=>({
           ...prev,
           messages:[...prev.messages, assistantMessage]
-        }))
+      }))  
+       
+       //API CALL via FETCH since axios does not support streaming
+       const res = await fetch('/api/chat/ai',{
+        method:"POST",
+        headers: {
+        'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          chatId:selectedChat._id,
+           prompt
+        })
+      })
 
-        for(let i=0; i<messageTokens.length;i++){
-          setTimeout(()=>{
-           setSelectedChat(prev => {
-               const newAssistantMessage = {
-                ...assistantMessage,
-                content: messageTokens.slice(0, i + 1).join(" ")
-             };
+      // if(!res.ok || !res.body){
+      //   throw new Error(" Failed to stream response")
+      // }
 
-              const updatedMessages = [...prev.messages.slice(0, -1), newAssistantMessage];
+      //handling errors
+       if(!res.ok){
+         const error = await res.json()
+         toast.error(error.message || "Unexpected error");
+         return;
+       }
+
+      //decoding and adding chunks 
+        const reader = res.body.getReader()
+         const decoder = new TextDecoder()
+         let finalmessage = ""
+
+         while(true){
+           const {value, done} = await reader.read()
+           if(done) break;
+           
+           const chunk = decoder.decode(value)
+           finalmessage+= chunk
+
+           //updating assistant message incementally
+             setSelectedChat(prev=>{
+                
+              const newAssistant = {...assistantMessage, content:finalmessage}
+
+              const updatedMessages = [...prev.messages.slice(0,-1), newAssistant]
 
               return {...prev, messages:updatedMessages}
-            })
+             })
 
-          },i*100)
-        }
-       }
-       else{
-        toast.error(data.message)
-        setPrompt(promptcopy)
 
-       }
+         }
+
+         // Add to chats as well (fully completed assistant message)
+
+          const fullAssistantMessage = {
+             ...assistantMessage,
+                content:finalmessage
+          }
+
+          setChats(prevChats =>
+           prevChats.map(chat =>
+                 chat._id === selectedChat._id
+                       ? { ...chat, messages: [...chat.messages, fullAssistantMessage] }
+                       : chat
+              )
+          );
+
+     
 
 
         
       }catch(error){
-          toast.error(error.message +'prompt error')
+          toast.error(error.message)
           console.log(error)
           setPrompt(promptcopy)
       }finally{

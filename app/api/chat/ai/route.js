@@ -68,18 +68,19 @@ const openai = new OpenAI({
 });
 
 export async function POST(req) {
+  
   try {
     const { userId } = getAuth(req);
     const { chatId, prompt } = await req.json();
 
     if (!userId) {
-      return NextResponse.json({ success: false, message: "User not authenticated" });
+      return NextResponse.json({ message: "User not authenticated" },{ status: 401},);
     }
 
     await connectDB();
     const data = await Chat.findOne({ _id: chatId, userId });
     if (!data) {
-      return NextResponse.json({ success: false, message: "Chat not found" });
+      return NextResponse.json({ message: "Chat not found" },{ status:401},);
     }
 
     // Create user message
@@ -96,27 +97,70 @@ export async function POST(req) {
       content
     }));
 
+   
+
     // Get completion from DeepSeek
-    const completion = await openai.chat.completions.create({
+    const stream = await openai.chat.completions.create({
       messages: apiMessages,  // Send full conversation history
       model: "deepseek/deepseek-r1-0528:free", // Updated model name
-      // Removed 'store' parameter as it's unsupported
+      stream:true
     });
 
-    const deepseekResponse = {
-      ...completion.choices[0].message,
-      timestamp: Date.now()
-    };
+    //Now chunks from LLM response have to be sent one by one
+      const encoder = new TextEncoder()
 
-    data.messages.push(deepseekResponse);
-    await data.save();
+      let fullResponse = '';
+      const readableStream = new ReadableStream({
+        async start(controller){
+           for await (const chunk of stream){
+             const content = chunk?.choices[0]?.delta?.content
 
-    return NextResponse.json({ success: true, data: deepseekResponse });
+             if(content){
+                fullResponse += content; // Collect for saving
+               controller.enqueue(encoder.encode(content))
+             }
+           }
+           controller.close()
+
+           const assistantFullResponse = {
+            role:"assistant",
+            content:fullResponse,
+            timestamp:Date.now()
+           }
+
+           data.messages.push(assistantFullResponse)
+           await data.save()
+        }
+      })
+
+
+      //Returning the stream response
+
+      return new Response(readableStream,{
+        status:200,
+          headers: {
+      "Content-Type": "text/plain",
+      "Transfer-Encoding": "chunked",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive"
+    }
+      })
+
+   
+    // const deepseekResponse = {
+    //   ...completion.choices[0].message,
+    //   timestamp: Date.now()
+    // };
+
+    // data.messages.push(deepseekResponse);
+    // await data.save();
+
+    // return NextResponse.json({ success: true, data: deepseekResponse });
 
   } catch (error) {
-    return NextResponse.json({ 
-      success: false, 
-      message: error.message 
-    });
+    return NextResponse.json(
+     
+      {message: error.message ||"Internal Server Error"},
+      { status:500}, );
   }
 }

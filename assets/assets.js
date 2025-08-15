@@ -22,6 +22,10 @@ import chat_icon_dull from "./chat_icon_dull.svg";
 import qrcode from "./qrcode.png";
 import three_dots from "./three_dots.svg";
 import new_icon from "./new_icon.svg";
+import user_icon from "./user.png";
+import logout_icon from "./logout.png";
+import search_icon2 from "./search_icon.png";
+import message_icon from "./icon_message.png";
 
 export const assets = {
   arrow_icon,
@@ -48,4 +52,8 @@ export const assets = {
   qrcode,
   three_dots,
   new_icon,
+  user_icon,
+  logout_icon,
+  search_icon2,
+  message_icon
 };
