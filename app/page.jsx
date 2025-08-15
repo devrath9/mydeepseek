@@ -19,7 +19,7 @@ export default function Home() {
   const[messages, setMessages] = useState([])
   const [openSearch, setOpenSearch] = useState(false)
 
-  const {selectedChat, user} = useAppcontext()
+  const {selectedChat, user, createNewChat} = useAppcontext()
   const containerRef = useRef(null)
 
 
@@ -58,7 +58,7 @@ export default function Home() {
         <div className={`md:hidden absolute flex justify-between  items-center w-full top-6 px-4 `}>
           <Image onClick={()=>{expand ? setExpand(false): setExpand(true)}}
           src={assets.menu_icon} alt=''/>
-          {user ? <Image className='opacity-70'src={assets.chat_icon} alt=''/> 
+          {user ? <Image onClick={createNewChat} className='opacity-70'src={assets.chat_icon} alt=''/> 
           :<button onClick={openSignIn}
           className="bg-white rounded-xl px-4 py-1.5 font-semibold text-sm cursor-pointer text-black">Login</button>}
         </div>
@@ -100,8 +100,9 @@ export default function Home() {
           </div>
         )
         }
-
+        
         <PromptBox isLoading={loading} setIsLoading={setLoading}/>
+        
 
       </div>
       <SearchModal open={openSearch} onClose={handleClose}/>

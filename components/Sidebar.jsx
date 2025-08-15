@@ -158,7 +158,7 @@ const Sidebar = ({ expand, setExpand, openSearchModal}) => {
      
 
       {user ? (
-        <div className={`sticky bottom-0.5  bg-[#212327] ${expand ? 'border-t border-gray-700 h-8 ' : 'h-10 justify-center flex'}`}>
+        <div className={`sticky max-md:bottom-2 bottom-0.5  bg-[#212327] ${expand ? 'border-t border-gray-700 h-8 ' : 'h-10 justify-center flex'}`}>
 
         <div className={`flex items-center relative 
                     gap-3 text-white/60 p-2 hover:bg-white/10 rounded-lg mt-0.5`}>
