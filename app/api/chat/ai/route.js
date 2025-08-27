@@ -64,23 +64,25 @@ import { NextResponse } from "next/server";
 // }
 const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.DEEPSEEK_API_KEY
+  apiKey: process.env.GPT_OSS_API_KEY
 });
 
 export async function POST(req) {
+
+  const startTime = Date.now()
   
   try {
     const { userId } = getAuth(req);
     const { chatId, prompt } = await req.json();
 
     if (!userId) {
-      return NextResponse.json({ message: "User not authenticated" },{ status: 401},);
+      return NextResponse.json({ message: "User not authenticated" },{ status: 401});
     }
 
     await connectDB();
     const data = await Chat.findOne({ _id: chatId, userId });
     if (!data) {
-      return NextResponse.json({ message: "Chat not found" },{ status:401},);
+      return NextResponse.json({ message: "Chat not found" },{ status:401});
     }
 
     // Create user message
@@ -102,7 +104,7 @@ export async function POST(req) {
     // Get completion from DeepSeek
     const stream = await openai.chat.completions.create({
       messages: apiMessages,  // Send full conversation history
-      model: "deepseek/deepseek-r1-0528:free", // Updated model name
+      model: "openai/gpt-oss-20b:free", // Updated model name
       stream:true
     });
 
@@ -110,17 +112,31 @@ export async function POST(req) {
       const encoder = new TextEncoder()
 
       let fullResponse = '';
+      let firstchunkreceived = false
+
       const readableStream = new ReadableStream({
         async start(controller){
            for await (const chunk of stream){
              const content = chunk?.choices[0]?.delta?.content
 
              if(content){
+               
+              if(!firstchunkreceived){
+              const firstChunktime = Date.now()
+              let timeTaken = firstChunktime - startTime
+              console.log(timeTaken)
+              firstchunkreceived = true
+              }
+
                 fullResponse += content; // Collect for saving
                controller.enqueue(encoder.encode(content))
              }
            }
            controller.close()
+
+           const endTime = Date.now()
+           let totalTime = endTime - startTime
+           console.log(totalTime)
 
            const assistantFullResponse = {
             role:"assistant",
@@ -129,9 +145,29 @@ export async function POST(req) {
            }
 
            data.messages.push(assistantFullResponse)
+
+           
+
+
            await data.save()
         }
       })
+
+      // Generate title using both prompt and response
+          // const titleCompletion = await openai.chat.completions.create({
+          //   messages: [
+          //     { role: "system", content: "Create a short title phrase for this conversation in text only upto 5 words." },
+          //     { role: "user", content: prompt },
+          //     { role: "assistant", content: fullResponse }
+          //   ],
+          //   model: "openai/gpt-oss-20b:free",
+          //   stream: false
+          // });
+
+          // const aiGeneratedTitle = titleCompletion.choices?.[0]?.message?.content?.trim();
+          // if ((!data.name || data.name === "New Chat") && aiGeneratedTitle) {
+          //   data.name = aiGeneratedTitle;
+          // }
 
 
       //Returning the stream response
@@ -142,25 +178,17 @@ export async function POST(req) {
       "Content-Type": "text/plain",
       "Transfer-Encoding": "chunked",
       "Cache-Control": "no-cache",
-      "Connection": "keep-alive"
-    }
+      "Connection": "keep-alive",
+      }
       })
 
    
-    // const deepseekResponse = {
-    //   ...completion.choices[0].message,
-    //   timestamp: Date.now()
-    // };
-
-    // data.messages.push(deepseekResponse);
-    // await data.save();
-
-    // return NextResponse.json({ success: true, data: deepseekResponse });
-
+   
   } catch (error) {
+    console.log(error)
     return NextResponse.json(
-     
-      {message: error.message ||"Internal Server Error"},
-      { status:500}, );
+    
+      {message: error.message ||"Internal Server Error"
+    },  { status:500} );
   }
 }

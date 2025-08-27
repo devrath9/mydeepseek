@@ -1,9 +1,10 @@
 import { assets } from '@/assets/assets'
 import React, { useEffect } from 'react'
 import Image from 'next/image'
-import Markdown from 'react-markdown'
 import Prism from 'prismjs'
 import toast from 'react-hot-toast'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 const Message = ({role, content}) => {
 
@@ -64,7 +65,11 @@ const Message = ({role, content}) => {
                          className='h-9 w-9 p-1 border border-white/15 rounded-full'alt=''/>
 
                          <div className='space-y-2 w-full '>
-                          <Markdown>{content}</Markdown>
+                            <div className="prose max-w-none prose-invert">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                 {content}
+                              </ReactMarkdown>
+                            </div>
                           </div>
                        </>
                         

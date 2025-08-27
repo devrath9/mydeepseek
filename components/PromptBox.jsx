@@ -1,5 +1,5 @@
 import { assets } from '@/assets/assets'
-import React ,{useState} from 'react'
+import React ,{useRef, useState} from 'react'
 import Image from 'next/image'
 import { useAppcontext } from '@/context/Appcontext'
 import axios from 'axios'
@@ -9,6 +9,9 @@ const PromptBox = ({isLoading,setIsLoading }) => {
 
    const[prompt, setPrompt] = useState('')
    const {user, chats, setChats,  selectedChat, setSelectedChat} = useAppcontext()
+
+
+const assistantRef = useRef("")
 
 
    const sendPrompt = async(e)=>{
@@ -37,6 +40,8 @@ const PromptBox = ({isLoading,setIsLoading }) => {
         ...prev,
         messages:[...prev.messages, userPrompt]
        }))  
+
+
 
        //initialising empty assistant message 
          const assistantMessage = {
@@ -70,14 +75,39 @@ const PromptBox = ({isLoading,setIsLoading }) => {
       //handling errors
        if(!res.ok){
          const error = await res.json()
-         toast.error(error.message || "Unexpected error");
-         return;
+         toast.error(error.message ||"AI Streaming response failed")
+         return
+        
        }
 
       //decoding and adding chunks 
         const reader = res.body.getReader()
          const decoder = new TextDecoder()
+         
+         let animationFrameId = null
          let finalmessage = ""
+
+         //flag to  schedule ui update
+          let isUpdateScheduled = false
+
+          const updateUI = ()=>{
+            if(isUpdateScheduled) return;
+
+             isUpdateScheduled = true 
+
+             animationFrameId = requestAnimationFrame(()=>{
+
+                const newAssistant = {...assistantMessage, content:assistantRef.current}
+
+                setSelectedChat(prev=>{
+                   const updatedMessages = [...prev.messages.slice(0,-1), newAssistant]
+                   return {...prev, messages:updatedMessages}
+                 })
+
+                 isUpdateScheduled = false
+
+             })
+          }
 
          while(true){
            const {value, done} = await reader.read()
@@ -85,28 +115,34 @@ const PromptBox = ({isLoading,setIsLoading }) => {
            
            const chunk = decoder.decode(value)
            finalmessage+= chunk
+           assistantRef.current = finalmessage
 
-           //updating assistant message incementally
-             setSelectedChat(prev=>{
-                
-              const newAssistant = {...assistantMessage, content:finalmessage}
+           updateUI()  //ui update on next animation frame
 
-              const updatedMessages = [...prev.messages.slice(0,-1), newAssistant]
+          }
 
-              return {...prev, messages:updatedMessages}
-             })
+          if(animationFrameId) cancelAnimationFrame(animationFrameId) //to prevent next animation when last chunk received
+
+          //One final update to ensure all chunks are in the UI.Just a single state change.
+
+          const fullAssistantMessage = {
+            ...assistantMessage,
+            content:finalmessage
+          }
+
+          
+
+          setSelectedChat(prev=>{
+                   const updatedMessages = [...prev.messages.slice(0,-1), fullAssistantMessage]
+                    
+                   return {...prev,  messages:updatedMessages}
+                 })
 
 
-         }
 
          // Add to chats as well (fully completed assistant message)
 
-          const fullAssistantMessage = {
-             ...assistantMessage,
-                content:finalmessage
-          }
-
-          setChats(prevChats =>
+         setChats(prevChats =>
            prevChats.map(chat =>
                  chat._id === selectedChat._id
                        ? { ...chat, messages: [...chat.messages, fullAssistantMessage] }
@@ -114,11 +150,10 @@ const PromptBox = ({isLoading,setIsLoading }) => {
               )
           );
 
-     
-
-
+         
         
-      }catch(error){
+
+     }catch(error){
           toast.error(error.message)
           console.log(error)
           setPrompt(promptcopy)
