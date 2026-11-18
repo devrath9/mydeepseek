@@ -191,7 +191,22 @@ export async function POST(req) {
    
    
   } catch (error) {
-    console.log(error)
+    console.error(
+    JSON.stringify(
+      {
+        status: error.status,
+        message: error.message,
+        code: error.code,
+        type: error.type,
+        error: error.error,
+        headers: error.headers
+          ? Object.fromEntries(error.headers.entries())
+          : undefined
+      },
+      null,
+      2
+    )
+  );
     return NextResponse.json(
     
       {message: error.message ||"Internal Server Error"
