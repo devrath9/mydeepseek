@@ -191,22 +191,14 @@ export async function POST(req) {
    
    
   } catch (error) {
-    console.error(
-    JSON.stringify(
-      {
-        status: error.status,
-        message: error.message,
-        code: error.code,
-        type: error.type,
-        error: error.error,
-        headers: error.headers
-          ? Object.fromEntries(error.headers.entries())
-          : undefined
-      },
-      null,
-      2
-    )
-  );
+   console.error("OpenRouter API Error:", {
+  status: error.status,
+  message: error.message,
+  code: error.code,
+  type: error.type,
+  details: error.error,
+  metadata: error.error?.metadata
+});
     return NextResponse.json(
     
       {message: error.message ||"Internal Server Error"
