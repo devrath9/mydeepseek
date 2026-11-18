@@ -62,9 +62,15 @@ import { NextResponse } from "next/server";
 //     return NextResponse.json({success:false, message:error.message})
 // }
 // }
+
+// const openai = new OpenAI({
+//   baseURL: 'https://openrouter.ai/api/v1',
+//   apiKey: process.env.GPT_OSS_API_KEY
+// });
+
 const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.GPT_OSS_API_KEY
+  apiKey: process.env.GOOGLE_GEMMA_API_KEY
 });
 
 export async function POST(req) {
@@ -102,9 +108,9 @@ export async function POST(req) {
    
 
     // Get completion from DeepSeek
-    const stream = await openai.chat.completions.create({
+   const stream = await openai.chat.completions.create({
       messages: apiMessages,  // Send full conversation history
-      model: "openai/gpt-oss-20b:free", // Updated model name
+      model: "google/gemma-4-26b-a4b-it:free", // Updated model name
       stream:true
     });
 
